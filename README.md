@@ -1,1 +1,55 @@
 # Second_Weeks_Note
+
+# 时间与运动
+**篇章总结：** 本章主要探讨随时间变化的位姿，第一个是轨迹，即机器人要跟从的位姿，其要保证随时间连续变化。第二个是
+
+## 轨迹
+### 1.平滑一维轨迹：
+用S(t)的五阶多项式表示，保证了其一阶，二阶导数光滑，其六个系数易于满足速度与加速度的**边界条件**。
+
+*1.（在matlab中用tpoly生成五次多项式轨迹，tpoly（0，1，50）表示值在0到1内分50时间步平滑变化）*
+
+*2.（[s,sd,sdd]三个输出选项可用于接受速度，加速度）*
+
+*3.(用lspb生成直线与抛物线的混合轨迹，能满足在最大速度上的时间尽可能长，其可以额外指定直线段速度)*
+
+### 2.多维情况：
+利用mtraj将一维标量扩展成多维向量情况, eg:mtraj(@lspb, [0 2], [1 -1], 50)，得到50*2的矩阵，并可用plot绘制。（二维情况）
+
+对于三维，可以将位姿齐次矩阵转换为六维向量(x = [transl(T); tr2rpy(T)'])再生成轨迹。
+
+## 多段轨迹情况:
+对于多个**中间点**，为了实现速度连续，舍弃让轨迹到达中间点。到达中间点前t/2时刻进入多项式曲线，经过t时刻进入另一段直线。
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326180556.png?raw=true)
+
+*1.（mstraj可基于中间点生成多段多轴轨迹，二维下eg:mstraj(via, [2.1], [], [4.1], 0.05, 0)，via是中间点矩阵，其余是最大速度向量，运动时间向量，起点坐标，采样间隔，加速时间）*
+
+## 姿态插值：
+**1.线性插值法**：对于三角度表示法可采用线性插值
+
+eg：对于两个姿态R0，R1，可先用tr2rpy算出横滚-俯仰-偏航角，再分50个时间步用mtraj生成轨迹，用tranimate生成动画。
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326181336.png?raw=true)
+
+也可采用四元数插值法。
+
+## 笛卡尔运动:
+对于同时涉及位置，姿态变化的运动称为笛卡尔运动。
+
+对于齐次变换矩阵T0，T1，可以用trinterp进行位姿插值得到轨迹Ts，再用transl(Ts)和tr2rpy(Ts)分别得到其平移部分和姿态变化。
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326181715.png?raw=true)
+
+也可以用ctraj进行插值，eg:ctraj(T0,T1,50);
+
+## 旋转坐标系:
+物体在旋转时有一个角速度向量，该向量的方向定义了瞬时旋转轴。
+
+**时变矩阵微分表达式**：
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326182353.png?raw=true)
+
+可通过skew函数由角速度向量求得S(w)
+
+若仅考虑坐标系的微小旋转，对上式用vex求逆，可得一个微小角度的表达式。若位姿微小变化用Rdelta表示，则旋转角为vex(Rdelta - eye(3,3))'
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326182842.png?raw=true)
+
+对于差异极小的位姿，可用位移增量与旋转增量构成的六维向量表示，可以写成齐次变换矩阵的形式，并用tr2delta(T0,T1);计算该六维向量。
+![](https://github.com/AllaNewmoon/Image/blob/main/QQ%E5%9B%BE%E7%89%8720230326183241.png?raw=true)
